@@ -1,0 +1,594 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mines Prediction Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        /* --- CSS Styling --- */
+        :root {
+            --primary-color: #00e6e6; /* Neon Blue */
+            --secondary-color: #ff00ff; /* Neon Pink */
+            --accent-color: #00ff00; /* Neon Green (for safe) */
+            --danger-color: #ff3333; /* Neon Red (for unsafe) */
+            --bg-dark: #1a0f2e;
+            --bg-light: #f0f0f0;
+            --text-dark: #e0e0e0;
+            --text-light: #333;
+            --glass-bg-dark: rgba(255, 255, 255, 0.08);
+            --glass-border-dark: rgba(255, 255, 255, 0.15);
+            --glass-bg-light: rgba(255, 255, 255, 0.6);
+            --glass-border-light: rgba(0, 0, 0, 0.1);
+            --shadow-color-dark: rgba(0, 230, 230, 0.6);
+            --shadow-color-light: rgba(0, 0, 0, 0.15);
+            --tile-bg-dark: rgba(255, 255, 255, 0.05);
+            --tile-bg-light: rgba(0, 0, 0, 0.05);
+
+            --grid-gap: 8px;
+            --tile-size: 80px; /* Base size for tiles */
+        }
+
+        /* Dark Mode by default */
+        body {
+            font-family: 'Orbitron', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--bg-dark);
+            color: var(--text-dark);
+            overflow: hidden; /* For background animation */
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        body.light-mode {
+            background: var(--bg-light);
+            color: var(--text-light);
+        }
+
+        /* Background Animation */
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #1a0f2e, #0f1a2e, #2e0f1a);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            z-index: -1;
+            opacity: 0.7;
+        }
+
+        .light-mode .background-animation {
+            background: linear-gradient(45deg, #e0e0e0, #f0f0f0, #e0e0e0);
+            opacity: 0.4;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            background: var(--glass-bg-dark);
+            border: 1px solid var(--glass-border-dark);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 0 30px var(--shadow-color-dark);
+            text-align: center;
+            max-width: 90%;
+            width: 600px; /* Max width for PC */
+            position: relative;
+            z-index: 1;
+            transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        .light-mode .container {
+            background: var(--glass-bg-light);
+            border: 1px solid var(--glass-border-light);
+            box-shadow: 0 0 20px var(--shadow-color-light);
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            color: var(--primary-color);
+            text-shadow: 0 0 10px var(--primary-color);
+            margin-bottom: 20px;
+            font-family: 'Share Tech Mono', monospace; /* More techy for title */
+        }
+
+        .platform-display {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            color: var(--secondary-color);
+            text-shadow: 0 0 5px var(--secondary-color);
+        }
+
+        .controls {
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 0.9em;
+            color: var(--text-dark);
+            transition: color 0.5s ease;
+        }
+
+        .light-mode label {
+            color: var(--text-light);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--primary-color);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-dark);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1em;
+            outline: none;
+            box-shadow: 0 0 8px rgba(0, 230, 230, 0.4);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.6);
+        }
+
+        .light-mode input,
+        .light-mode select {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: #aaa;
+            color: var(--text-light);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .light-mode input:focus,
+        .light-mode select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 8px rgba(0, 230, 230, 0.4);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .neon-button {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1em;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(0, 230, 230, 0.7), 0 0 25px rgba(255, 0, 255, 0.7);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            flex: 1; /* Allow buttons to expand */
+            max-width: 250px;
+        }
+
+        .neon-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .neon-button:hover::before {
+            left: 100%;
+        }
+
+        .neon-button:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 0 20px rgba(0, 230, 230, 1), 0 0 35px rgba(255, 0, 255, 1);
+        }
+
+        .neon-button:active {
+            transform: translateY(0);
+            box-shadow: 0 0 10px rgba(0, 230, 230, 0.5), 0 0 15px rgba(255, 0, 255, 0.5);
+        }
+
+        .neon-button.secondary {
+            background: linear-gradient(45deg, #555, #888);
+            box-shadow: 0 0 10px rgba(100, 100, 100, 0.5);
+        }
+
+        .neon-button.secondary:hover {
+            background: linear-gradient(45deg, #777, #aaa);
+            box-shadow: 0 0 15px rgba(120, 120, 120, 0.8);
+        }
+
+        .neon-button.small {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            max-width: fit-content;
+        }
+
+        .game-grid-section {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .mines-grid {
+            display: grid;
+            grid-template-columns: repeat(5, var(--tile-size));
+            grid-template-rows: repeat(5, var(--tile-size));
+            gap: var(--grid-gap);
+            background: rgba(0, 0, 0, 0.2);
+            padding: var(--grid-gap);
+            border-radius: 12px;
+            box-shadow: inset 0 0 10px rgba(0, 230, 230, 0.5), 0 0 20px rgba(0, 230, 230, 0.5);
+            transition: box-shadow 0.5s ease, background 0.5s ease;
+        }
+
+        .light-mode .mines-grid {
+            background: rgba(255, 255, 255, 0.4);
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1), 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .tile {
+            width: var(--tile-size);
+            height: var(--tile-size);
+            background: var(--tile-bg-dark);
+            border: 1px solid var(--glass-border-dark);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            cursor: default; /* No interaction until predicted */
+            color: transparent; /* Hide content by default */
+            box-shadow: 0 0 5px rgba(0, 230, 230, 0.2);
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease-out, color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .light-mode .tile {
+            background: var(--tile-bg-light);
+            border: 1px solid var(--glass-border-light);
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Animations for reveal */
+        .tile.revealed {
+            color: var(--text-dark); /* Make content visible */
+            animation: tilePop 0.3s ease-out forwards;
+            background-color: transparent; /* Revert background for colored glows */
+            border-color: transparent; /* Revert border */
+            box-shadow: none; /* Revert shadow */
+        }
+
+        @keyframes tilePop {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .tile.safe {
+            background-color: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 15px var(--accent-color), 0 0 25px var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .tile.unsafe {
+            background-color: rgba(255, 0, 0, 0.1);
+            box-shadow: 0 0 15px var(--danger-color), 0 0 25px var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        /* Soft glow animation for safe mines */
+        @keyframes softGlow {
+            0% { box-shadow: 0 0 15px var(--accent-color), 0 0 25px var(--accent-color); }
+            50% { box-shadow: 0 0 20px var(--accent-color), 0 0 35px var(--accent-color); }
+            100% { box-shadow: 0 0 15px var(--accent-color), 0 0 25px var(--accent-color); }
+        }
+
+        .tile.safe.revealed {
+            animation: softGlow 2s infinite alternate, tilePop 0.3s ease-out forwards;
+        }
+
+        footer {
+            margin-top: 40px;
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            transition: color 0.5s ease;
+        }
+
+        .light-mode footer {
+            color: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Responsive Layout */
+        @media (max-width: 768px) {
+            :root {
+                --tile-size: 60px; /* Smaller tiles for mobile */
+                --grid-gap: 6px;
+            }
+
+            .container {
+                padding: 20px;
+                width: 95%; /* Use more width on smaller screens */
+                max-width: none;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .platform-display {
+                font-size: 1em;
+            }
+
+            .neon-button {
+                font-size: 0.9em;
+                padding: 10px 15px;
+                max-width: none; /* Let them take full width or flex */
+            }
+
+            .button-group {
+                flex-direction: column; /* Stack buttons vertically on mobile */
+                gap: 10px;
+            }
+
+            .mines-grid {
+                grid-template-columns: repeat(5, var(--tile-size));
+                grid-template-rows: repeat(5, var(--tile-size));
+            }
+
+            footer {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --tile-size: 50px; /* Even smaller tiles */
+                --grid-gap: 5px;
+            }
+            header h1 {
+                font-size: 1.5em;
+            }
+            .neon-button {
+                padding: 8px 12px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-animation"></div>
+
+    <div class="container">
+        <header>
+            <div class="platform-display">
+                Platform: <span id="currentPlatform">1xbet</span>
+            </div>
+            <h1>Mines Prediction Tool</h1>
+        </header>
+
+        <main>
+            <section class="controls">
+                <div class="control-group">
+                    <label for="platformSelector">Game Platform:</label>
+                    <select id="platformSelector">
+                        <option value="1xbet" selected>1xbet</option>
+                        <!-- Add more platforms here if desired -->
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="seedInput">Enter Your Seed:</label>
+                    <input type="text" id="seedInput" placeholder="e.g., mysecretseed123" value="defaultseed123">
+                </div>
+
+                <div class="control-group">
+                    <label for="safeMinesToReveal">Safe Mines to Reveal (1-24):</label>
+                    <input type="number" id="safeMinesToReveal" min="1" max="24" value="5">
+                </div>
+                
+                <div class="button-group">
+                    <button id="predictButton" class="neon-button">Predict Safe Mines</button>
+                    <button id="resetButton" class="neon-button secondary">Reset Game</button>
+                </div>
+            </section>
+
+            <section class="game-grid-section">
+                <div id="minesGrid" class="mines-grid">
+                    <!-- Tiles will be dynamically generated by JavaScript -->
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>⚡ Created by BakiAR</p>
+            <button id="darkModeToggle" class="neon-button small">Toggle Dark Mode</button>
+        </footer>
+    </div>
+
+    <script>
+        // --- JavaScript Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const GRID_SIZE = 5;
+            const TOTAL_TILES = GRID_SIZE * GRID_SIZE;
+            const MINE_CHAR = '💣';
+            const SAFE_CHAR = '💎';
+
+            const minesGrid = document.getElementById('minesGrid');
+            const platformSelector = document.getElementById('platformSelector');
+            const currentPlatformDisplay = document.getElementById('currentPlatform');
+            const seedInput = document.getElementById('seedInput');
+            const safeMinesToRevealInput = document.getElementById('safeMinesToReveal');
+            const predictButton = document.getElementById('predictButton');
+            const resetButton = document.getElementById('resetButton');
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const body = document.body;
+
+            let tiles = [];
+            let safeMinePositions = [];
+            let unsafeMinePositions = [];
+            let isPredicted = false;
+
+            // --- Utility Functions ---
+
+            // Simple pseudo-random number generator for seeding
+            // From StackOverflow, suitable for basic deterministic random
+            function mulberry32(a) {
+                return function() {
+                    var t = a += 0x6D2B79F5;
+                    t = Math.imul(t ^ t >>> 15, t | 1);
+                    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+                }
+            }
+
+            function generateSeededRandom(seed) {
+                let numericSeed = 0;
+                for (let i = 0; i < seed.length; i++) {
+                    numericSeed += seed.charCodeAt(i);
+                }
+                return mulberry32(numericSeed);
+            }
+
+            // --- Game Logic ---
+
+            function createGrid() {
+                minesGrid.innerHTML = ''; // Clear existing grid
+                tiles = [];
+                for (let i = 0; i < TOTAL_TILES; i++) {
+                    const tile = document.createElement('div');
+                    tile.classList.add('tile');
+                    tile.dataset.index = i;
+                    minesGrid.appendChild(tile);
+                    tiles.push(tile);
+                }
+            }
+
+            function generateMinePositions(seed, countToReveal) {
+                const random = generateSeededRandom(seed);
+                const allPositions = Array.from({ length: TOTAL_TILES }, (_, i) => i);
+
+                // Shuffle all positions using the seeded random function
+                for (let i = allPositions.length - 1; i > 0; i--) {
+                    const j = Math.floor(random() * (i + 1));
+                    [allPositions[i], allPositions[j]] = [allPositions[j], allPositions[i]];
+                }
+
+                // Determine safe and unsafe mines
+                safeMinePositions = allPositions.slice(0, countToReveal);
+                unsafeMinePositions = allPositions.slice(countToReveal);
+            }
+
+            function predictMines() {
+                if (isPredicted) return;
+
+                const seed = seedInput.value || "defaultseed";
+                const safeMinesCount = parseInt(safeMinesToRevealInput.value, 10);
+
+                if (isNaN(safeMinesCount) || safeMinesCount < 1 || safeMinesCount > TOTAL_TILES - 1) {
+                    alert(`Please enter a number between 1 and ${TOTAL_TILES - 1} for safe mines to reveal.`);
+                    return;
+                }
+
+                generateMinePositions(seed, safeMinesCount);
+
+                tiles.forEach((tile, index) => {
+                    tile.classList.add('revealed');
+                    if (safeMinePositions.includes(index)) {
+                        tile.textContent = SAFE_CHAR;
+                        tile.classList.add('safe');
+                    } else {
+                        tile.textContent = MINE_CHAR;
+                        tile.classList.add('unsafe');
+                    }
+                });
+                isPredicted = true;
+            }
+
+            function resetGame() {
+                tiles.forEach(tile => {
+                    tile.textContent = '';
+                    tile.classList.remove('revealed', 'safe', 'unsafe');
+                });
+                safeMinePositions = [];
+                unsafeMinePositions = [];
+                isPredicted = false;
+            }
+
+            // --- Event Listeners ---
+
+            platformSelector.addEventListener('change', (event) => {
+                currentPlatformDisplay.textContent = event.target.value;
+            });
+
+            predictButton.addEventListener('click', predictMines);
+            resetButton.addEventListener('click', resetGame);
+
+            darkModeToggle.addEventListener('click', () => {
+                body.classList.toggle('light-mode');
+                // Save user preference
+                if (body.classList.contains('light-mode')) {
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+
+            // --- Initialization ---
+
+            function init() {
+                createGrid();
+                // Load theme preference
+                if (localStorage.getItem('theme') === 'light') {
+                    body.classList.add('light-mode');
+                } else {
+                    body.classList.remove('light-mode'); // Default to dark if no preference or 'dark'
+                }
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
